@@ -1,0 +1,20 @@
+[Unit]
+Description=gunicorn daemon
+Requires=gunicorn.socket
+After=network.target
+
+[Service]
+User=root
+Group=root
+WorkingDirectory=/home/ubuntu/website
+ExecStart=/usr/local/bin/gunicorn \
+          --error-logfile /var/log/gunicorn/error.log \
+          --access-logfile /var/log/gunicorn/access.log \
+          --workers 1 \
+          --threads 8 \
+          --worker-connections=1000 \
+          --bind unix:/run/gunicorn.sock \
+          ribcwebsite.wsgi:application
+
+[Install]
+WantedBy=multi-user.target

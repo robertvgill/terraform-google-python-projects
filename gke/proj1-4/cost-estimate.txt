@@ -1,0 +1,43 @@
+# Estimates cost of provisioned static IP addresses: 
+Product = IP Addresses
+Region = Singapore
+IP addresses attached to forwarding rules = 1
+Total Estimated Cost = $0.00 per 1 month
+
+# Estimates cost of Cloud NAT gateway: 
+Product = Cloud NAT
+Number of assigned VM instances = 5
+Traffic Proccessed = 1,024 GiB
+Static/Ephimeral IP Count for Cloud NAT = 1
+Total Estimated Cost = $51.19 per 1 month
+
+# Estimates cost of PostgreSQL Compute Engine instance:
+Product = Compute Engine
+Number of instances = 1
+Region = asia-southeast1
+Machine family = General purpose
+Machine type = e2-standard-2
+Total hours per month = 730
+Workload estimate = $60.34 /month
+
+# Estimates cost of RIBC webiste Managed Instance Group instances:
+Product = Compute Engine
+Number of instances = 5
+Region = asia-southeast1
+Machine family = General purpose
+Machine type = e2-medium
+Total hours per month = 730 * 5
+Workload estimate = $150.85 /month
+
+# Estimates cost of HTTPs load balancer:
+Product = Cloud Load Balancing
+Region = Singapore
+Inbound data processed: 1,024 GiB = USD 9.22
+Outbound data processed: 1,024 GiB = USD 9.22
+Forwarding rules = 2
+Total Estimated Cost: USD 36.68 per 1 month
+
+# Estimates all network ingress / egress cost:
+Product = Network Telemetry
+Logs Volume = 1,024 GiB
+Total Estimated Cost: USD 512.00 per 1 month

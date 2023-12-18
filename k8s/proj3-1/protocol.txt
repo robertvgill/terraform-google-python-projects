@@ -1,0 +1,106 @@
+## The server code (server.py) explained:
+
+1. The code import the necessary socket and os modules:
+ import os
+ import socket
+
+The socket module provides a networking interface, while os enables access to functions of the operating system. The latter includes file I/O and process management.
+
+2. Next, the code sets the path for the Unix socket. The socket_path variable holds the path for the Unix socket.
+# Set the path for the Unix socket
+    socket_path = os.environ["SOCKET_PATH"]
+
+3. The script creates a Unix socket server using the socket() function provided by the socket module. It takes the address family as the first parameter, which is set to AF_UNIX for Unix datagram sockets, and the socket type as the second parameter, which is set to SOCK_DGRAM for a TCP socket. The bind() method is called to bind the socket to the path after creating the server:
+# Create the Unix socket server
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM)
+
+# Bind the socket to the path
+    sock.bind(socket_path)
+
+4. Once a connection is made, the server receives data from the client using the recvfrom() method. In this case, the argument to recv() is the maximum amount of data that can received.
+    try:
+        # Receive data from the client
+        while True:
+
+            msg, address = sock.recvfrom(MSG_SIZE)
+
+5. At this point, the server code can close the connection with the close() method. Moreover, the socket file is removed using the os.unlink() method to clean up any leftover resources:
+# Remove the socket file
+    finally:
+        os.unlink(socket_path)
+
+
+## Format message types:
+The `MSG_INFER` message type is defined by the `MSG_FORMAT` variable in the code. The format is specified using Python's `struct` module, and it consists of the following components: MSG_FORMAT = "!HB256p16p"
+
+Break down:
+1. **`!`**: This indicates that the data should be packed in network byte order (big-endian).
+2. **`H`**: This corresponds to an unsigned short (2 bytes), representing `msg_id`.
+3. **`B`**: This corresponds to an unsigned char (1 byte), representing `msg_type`.
+4. **`256p`**: This represents a fixed-size string of 256 bytes (pads with null bytes), representing `msg_arg1`, which is likely a file path.
+5. **`16p`**: This represents a fixed-size string of 16 bytes (pads with null bytes), representing `msg_arg2`, which may be another identifier or argument.
+
+Structure:
+- `msg_id` (2 bytes)
+- `msg_type` (1 byte)
+- `msg_arg1` (256 bytes, padded with null bytes)
+- `msg_arg2` (16 bytes, padded with null bytes)
+
+This structure is used to pack the data before sending it over the Unix domain socket, and the server unpacks this structure when receiving and processing the `MSG_INFER` messages.
+
+
+The `MSG_RESULT` message type is defined by the `struct` module in Python, specifically by the `struct.pack` method when constructing the message to be sent. The format is specified using the following format string: "!HBBH253xBd7x"
+
+Break down:
+1. **`!`**: Indicates network byte order (big-endian).
+2. **`H`**: Unsigned short (2 bytes), representing `msg_id`.
+3. **`B`**: Unsigned char (1 byte), representing `msg_type` (which is `MSG_RESULT` in this case).
+4. **`B`**: Unsigned char (1 byte), representing some additional information (e.g., the number of results).
+5. **`H`**: Unsigned short (2 bytes), representing additional information (e.g., the length of result 1).
+6. **`253x`**: 253 bytes padding with null bytes. This is used to make the total size of the packed data 256 bytes.
+7. **`B`**: Unsigned char (1 byte), representing the length of result 2.
+8. **`d`**: Double-precision float (8 bytes), representing `res1`.
+9. **`7x`**: 7 bytes padding with null bytes.
+10. **`d`**: Double-precision float (8 bytes), representing `res2`.
+
+Structure:
+- `msg_id` (2 bytes)
+- `msg_type` (1 byte)
+- Additional information (2 bytes)
+- Padding (253 bytes)
+- Length of result 2 (1 byte)
+- `res1` (8 bytes)
+- Padding (7 bytes)
+- `res2` (8 bytes)
+
+This structure is used to pack the data before sending it over the Unix domain socket, and the server unpacks this structure when receiving and processing the `MSG_RESULT` messages.
+
+
+The `MSG_ERROR` message type is defined by the `struct` module in Python, specifically by the `struct.pack` method when constructing the error message to be sent. The format is specified using the following format string: "!HB256p16x"
+
+Break down:
+1. **`!`**: Indicates network byte order (big-endian).
+2. **`H`**: Unsigned short (2 bytes), representing `msg_id`.
+3. **`B`**: Unsigned char (1 byte), representing `msg_type` (which is `MSG_ERROR` in this case).
+4. **`256p`**: 256 bytes for a fixed-size string (padded with null bytes), representing the error message (`error_message`).
+5. **`16x`**: 16 bytes padding with null bytes.
+
+Structure:
+- `msg_id` (2 bytes)
+- `msg_type` (1 byte)
+- `error_message` (256 bytes, padded with null bytes)
+- Padding (16 bytes)
+
+This structure is used to pack the error message before sending it over the Unix domain socket, and the server unpacks this structure when receiving and processing the `MSG_ERROR` messages. The `error_message` field contains the error message information, and the padding ensures that the total size of the packed data is 275 bytes (2 + 1 + 256 + 16).
+
+
+## Security flaws found within the server code (server.py):
+1. No authentication or authorization: The code doesn't include any form of authentication or authorization mechanism. It blindly accepts messages from any client without verifying the identity or permissions of the sender. This can be a security risk if the server is meant to be accessed only by trusted clients.
+
+2. Lack of encryption: The communication between the server and clients is not encrypted. If the data being transmitted is sensitive, an attacker could potentially snoop on the communication. Consider using a secure communication protocol or implementing encryption to protect the confidentiality of the data.
+
+3. Input validation: The code doesn't perform sufficient input validation on the received messages. For instance, it assumes that the received file paths (msg_arg1) and other arguments are valid. This can lead to vulnerabilities such as path traversal attacks. Always validate and sanitize user inputs to prevent security vulnerabilities.
+
+4. Error handling disclosure: The error messages generated by the server might reveal sensitive information. For example, the "Inference failed" error message could expose details about the internal workings of the server. It's generally recommended to provide generic error messages to clients and log detailed error information securely on the server.
+
+5. Resource exhaustion: The server doesn't impose any limits on resource usage for handling incoming messages. An attacker could potentially flood the server with a large number of requests, leading to resource exhaustion. Implementing rate limiting or other resource management mechanisms can mitigate this risk.
